@@ -1,0 +1,73 @@
+{
+  "info": {
+    "_postman_id": "97411893-3c39-496f-968f-d593e6fa49c7",
+    "name": "WAD Capstone - Lab 1",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "55241780",
+    "_collection_link": "https://go.postman.co/collection/55241780-97411893-3c39-496f-968f-d593e6fa49c7?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/health",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "health"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Api Info",
+      "request": {
+        "method": "GET",
+        "header": []
+      },
+      "response": []
+    },
+    {
+      "name": "Echo Message",
+      "request": {
+        "method": "GET",
+        "header": []
+      },
+      "response": []
+    },
+    {
+      "name": "Echo Uppercase",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/api/echo/HaloCakrawala?upper=true",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "api",
+            "echo",
+            "HaloCakrawala"
+          ],
+          "query": [
+            {
+              "key": "upper",
+              "value": "true"
+            }
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
