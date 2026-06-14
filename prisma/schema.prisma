@@ -1,44 +1,57 @@
 // File: prisma/schema.prisma
+
 generator client {
-  provider = "prisma-client-js"
+provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "mysql"
-  
 }
 
-// ==========================================
-// 1. Model User
-// ==========================================
+// ─── Model User ───────────────────────────────────────────
 model User {
-  id        Int      @id @default(autoincrement())
-  name      String   @db.VarChar(100)
-  email     String   @unique @db.VarChar(255)
-  password  String   @db.VarChar(255)
+  id Int @id @default(autoincrement())
+  name String @db.VarChar(100)
+  email String @unique @db.VarChar(255)
+  password String @db.VarChar(255)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  tasks     Task[]
+
+  tasks Task[]
+  refreshTokens refreshToken[]
 
   @@map("users")
 }
 
-// ==========================================
-// 2. Model Category
-// ==========================================
-model Category {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique @db.VarChar(100)
-  color     String   @default("#6366F1") @db.VarChar(7)
+// ─── Model baru: refreshToken ───────────────────────────
+model refreshToken {
+  id Int @id @default(autoincrement())
+  token String @unique @db.VarChar(512)
+  userId Int
+  expiresAt DateTime
+  isRevoked Boolean @default(false)
   createdAt DateTime @default(now())
-  tasks     Task[]
+
+  user User @relation(fields: [userId], references: [id], onDelete:Cascade)
+  
+  @@index([token])
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+// ─── Model Category ───────────────────────────────────────
+model Category {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique @db.VarChar(100)
+  color       String    @default("#6366F1") @db.VarChar(7)
+  createdAt   DateTime  @default(now())
+
+  tasks       Task[]
 
   @@map("categories")
 }
 
-// ==========================================
-// 3. Model Task
-// ==========================================
+// ─── Model Task ───────────────────────────────────────────
 model Task {
   id          Int       @id @default(autoincrement())
   title       String    @db.VarChar(200)
@@ -48,11 +61,12 @@ model Task {
   dueDate     DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  userId      Int
-  categoryId  Int?
 
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  userId     Int
+  categoryId Int?
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   // Index untuk mempercepat query filter umum
   @@index([userId])
@@ -62,9 +76,8 @@ model Task {
   @@map("tasks")
 }
 
-// ==========================================
-// Enums
-// ==========================================
+// ─── Enum ─────────────────────────────────────────────────
+// Di MySQL, Prisma mengimplementasikan enum sebagai tipe ENUM native
 enum Status {
   TODO
   IN_PROGRESS

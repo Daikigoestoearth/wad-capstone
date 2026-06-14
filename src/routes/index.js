@@ -1,11 +1,21 @@
+// File: src/routes/index.js
 const express = require('express');
 const router = express.Router();
-const healthController = require('../controllers/healthController');
+const { getHealth, getInfo, echo } =
+require('../controllers/healthController');
 
-// Memanggil fungsi langsung lewat objek induk 'healthController'
-router.get('/health', healthController.getHealth);
-router.get('/info', healthController.getApiInfo);
-router.get('/echo/:msg', healthController.echoMessage);
+// ─── Kesehatan Server ───────────────────────────────────────
+// GET /health — dipanggil di luar prefix /api
+router.get('/health', getHealth);
 
-// FORMAT EKSPOR TUNGGAL
+// ─── Root Route ─────────────────────────────────────────────
+router.get('/', (req, res) => {
+    res.status(200).json({
+        message: 'Welcome to basic-rest-api', docs: '/api/info'
+    });
+});
+
+// ─── API Routes ─────────────────────────────────────────────
+router.get('/info', getInfo);
+router.get('/echo/:msg', echo);
 module.exports = router;

@@ -1,82 +1,91 @@
-// File: src/index.js
+// File: src/index.js (versi terbaru Minggu 2)
+const config = require('./config');
 const express = require('express');
-const dotenv = require('dotenv');
+const routes = require('./routes');
 const tasksRoutes = require('./routes/tasks.routes');
 const usersRoutes = require('./routes/users.routes');
-const authRoutes = require('./routes/auth.routes'); 
-const authenticate = require('./middleware/authenticate'); 
-
-// Load environment variables
-dotenv.config();
+const authRoutes = require('./routes/auth.routes'); // BARU
+const authenticate = require('./middleware/authenticate'); // BARU
+const setupSwagger = require('./docs/swagger');
 
 const app = express();
-const port = process.env.PORT || 3000;
 
-// Middleware untuk parsing JSON
+// ─── Middleware Global ───────────────────────────────────────
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// ==================== ROUTE PUBLIK ====================
-app.use('/auth', authRoutes);
-
-// Route default untuk cek server publik
-app.get('/', (req, res) => {
-  res.status(200).json({
-    message: 'Welcome to WAD Capstone API',
-    status: 'Active'
-  });
+// Logging middleware
+app.use((req, res, next) => {
+    const start = Date.now();
+    res.on('finish', () => {
+        const duration = Date.now() - start;
+        console.log(`${req.method} ${req.path} → ${res.statusCode}
+(${duration}ms)`);
+    });
+    next();
 });
 
-// ==================== GERBANG KEAMANAN API ====================
-app.use('/api/v1', authenticate);
+// ─── Routes ─────────────────────────────────────────────────
+app.use('/', routes); // /health
+app.use('/api', routes); // /api/info, /api/echo/:msg
 
-// ==================== ROUTE YANG DILINDUNGI ====================
+
+// ─── Auth routes (tidak dilindungi) ────────────────────
+app.use('/auth', authRoutes);
+
+// ─── API Routes yang dilindungi ─────────────────────────
+// authenticate dijalankan sebelum semua route /api/v1/...
+app.use('/api/v1', authenticate);
 app.use('/api/v1/tasks', tasksRoutes);
 app.use('/api/v1/users', usersRoutes);
 
-// ==================== GLOBAL ERROR HANDLER ====================
+// ─── Swagger UI ─────────────────────────────────────────────
+setupSwagger(app);
+
+// ─── 404 & Error Handlers ───────────────────────────────────
+app.use((req, res) => {
+    res.status(404).json({
+        error: {
+            code: 'NOT_FOUND',
+            message: `Route ${req.method} ${req.path} tidak ditemukan.`,
+            hint: 'Kunjungi GET /api/docs untuk dokumentasi API.',
+        },
+    });
+});
+
+// ─── Update error handler: tangani error dari authService ─
 app.use((err, req, res, next) => {
-  // Tangani limpahan error dengan statusCode custom dari authService
-  if (err.statusCode) {
-    return res.status(err.statusCode).json({
-      error: { code: err.code || 'AUTH_ERROR', message: err.message }
+    // Error dengan statusCode dari authService
+    if (err.statusCode) {
+        return res.status(err.statusCode).json({
+            error: { code: err.code || 'AUTH_ERROR', message: err.message },
+        });
+    }
+    // Prisma P2002: email duplikat (sudah ada user dengan email tersebut)
+    if (err.code === 'P2002') {
+        return res.status(409).json({
+            error: {
+                code: 'DUPLICATE_RESOURCE', message: 'Data sudah digunakan.' }
+});
+    }
+    console.error('Unhandled error:', err);
+    res.status(500).json({
+        error: {
+            code: 'INTERNAL_ERROR', message: config.env === 'development'
+                ? err.message : 'Terjadi kesalahan di server.'
+        }
     });
-  }
-
-  // P2002: Unique constraint violation (misal: email duplikat)
-  if (err.code === 'P2002') {
-    const field = err.meta?.target ?? 'field';
-    return res.status(409).json({
-      error: { code: 'DUPLICATE_RESOURCE', message: `Nilai ${field} sudah digunakan.` }
-    });
-  }
-
-  // P2003: Foreign key constraint failed (misal: merujuk ke ID user yang tidak ada)
-  if (err.code === 'P2003') {
-    return res.status(400).json({
-      error: { code: 'INVALID_REFERENCE', message: 'Referensi ID tidak ditemukan di database.' }
-    });
-  }
-
-  // P2025: Record not found untuk update atau delete
-  if (err.code === 'P2025') {
-    return res.status(404).json({
-      error: { code: 'NOT_FOUND', message: 'Data tidak ditemukan.' }
-    });
-  }
-
-  // Log error unhandled lainnya untuk debugging development
-  console.error('Unhandled error:', err);
-  res.status(500).json({
-    error: { code: 'INTERNAL_ERROR', message: 'Terjadi kesalahan di server.' } 
-  });
 });
 
-// ==================== JALANKAN SERVER ====================
-app.listen(port, () => {
-  console.log('-'.repeat(50));
-  console.log(`WAD Capstone API`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`Database   : MySQL via XAMPP (Authenticated)`);
-  console.log(`Server     : http://localhost:${port}`);
-  console.log('-'.repeat(50));
+// ─── Start Server ────────────────────────────────────────────
+app.listen(config.port, () => {
+    console.log('─'.repeat(50));
+    console.log(` ${config.appName} v${config.version}`);
+    console.log(` Environment : ${config.env}`);
+    console.log(` Database : MySQL (Prisma MariaDB Adapter)`);
+    console.log(` Server : http://localhost:${config.port}`);
+    console.log(` Docs : http://localhost:${config.port}/api/docs`);
+    console.log('─'.repeat(50));
 });
+
+module.exports = app;
