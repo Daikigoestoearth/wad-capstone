@@ -5,6 +5,7 @@ const routes = require('./routes');
 const tasksRoutes = require('./routes/tasks.routes');
 const usersRoutes = require('./routes/users.routes');
 const authRoutes = require('./routes/auth.routes'); // BARU
+const commentRoutes = require('./routes/comment.routes');
 const authenticate = require('./middleware/authenticate'); // BARU
 const setupSwagger = require('./docs/swagger');
 
@@ -38,6 +39,7 @@ app.use('/auth', authRoutes);
 app.use('/api/v1', authenticate);
 app.use('/api/v1/tasks', tasksRoutes);
 app.use('/api/v1/users', usersRoutes);
+app.use('/api/v1/comments', commentRoutes);
 
 // ─── Swagger UI ─────────────────────────────────────────────
 setupSwagger(app);
