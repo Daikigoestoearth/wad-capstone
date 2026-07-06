@@ -1,0 +1,80 @@
+/* File: src/index.css */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background: #f8fafc;
+  color: #1e293b;
+  line-height: 1.6;
+}
+
+/* Navbar */
+.navbar {
+  background: #1F4E79;
+  color: white;
+  padding: 0 2rem;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.navbar-brand a { color: white; text-decoration: none; font-weight: 700; font-size: 1.1rem; }
+.navbar-menu { display: flex; align-items: center; gap: 1.5rem; }
+.navbar-menu a { color: #93c5fd; text-decoration: none; }
+.navbar-menu a:hover { color: white; }
+.navbar-user { color: #bfdbfe; font-size: 0.9rem; }
+
+/* Halaman Utama */
+.main-content { max-width: 1100px; margin: 2rem auto; padding: 0 1.5rem; }
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+.page-header h1 { font-size: 1.75rem; color: #1F4E79; }
+
+/* Tombol */
+.btn-primary {
+  background: #2E75B6; color: white; border: none;
+  padding: 0.6rem 1.2rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem;
+}
+.btn-primary:hover { background: #1F4E79; }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-logout {
+  background: transparent; color: #fca5a5; border: 1px solid #fca5a5;
+  padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer; font-size: 0.85rem;
+}
+.btn-logout:hover { background: #dc2626; color: white; border-color: #dc2626; }
+.btn-icon { background: none; border: none; cursor: pointer; font-size: 0.85rem; color: #64748b; margin-left: 0.5rem; }
+
+/* Filter Bar */
+.filter-bar { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.filter-btn { padding: 0.4rem 1rem; border: 1px solid #d1d5db; border-radius: 20px; cursor: pointer; background: white; font-size: 0.85rem; }
+.filter-btn.active { background: #2E75B6; color: white; border-color: #2E75B6; }
+
+/* Task Grid */
+.task-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; }
+.task-card {
+  background: white; border-radius: 8px; padding: 1.2rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0;
+}
+.task-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; }
+.task-title { font-size: 1rem; font-weight: 600; color: #1e293b; }
+.task-description { font-size: 0.875rem; color: #64748b; margin-bottom: 0.75rem; }
+.task-card-footer { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+.badge { color: white; font-size: 0.75rem; padding: 0.2rem 0.6rem; border-radius: 12px; font-weight: 600; }
+.badge-outline { font-size: 0.75rem; padding: 0.2rem 0.6rem; border-radius: 12px; border: 1px solid; font-weight: 600; }
+.due-date { font-size: 0.75rem; color: #6b7280; margin-left: auto; }
+
+/* Auth Pages & Form */
+.auth-container { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f1f5f9; }
+.auth-card { background: white; border-radius: 12px; padding: 2.5rem; width: 100%; max-width: 420px; box-shadow: 0 4px 24px rgba(0,0,0,0.1); }
+.form-group { margin-bottom: 1rem; }
+.form-group label { display: block; font-size: 0.875rem; font-weight: 600; color: #374151; margin-bottom: 0.4rem; }
+.form-group input, .form-group textarea, .form-group select {
+  width: 100%; padding: 0.6rem 0.8rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.9rem; font-family: inherit;
+}
+.error { color: #dc2626; font-size: 0.8rem; margin-top: 0.25rem; display: block; }
+.alert-error { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 0.75rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.875rem; }
+
+/* Modal */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
+.modal-card { background: white; border-radius: 12px; padding: 2rem; width: 100%; max-width: 560px; }
