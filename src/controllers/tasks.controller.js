@@ -4,7 +4,13 @@ const taskRepo = require('../repositories/task.repository');
 const listTasks = async (req, res, next) => {
   try {
     const { status, priority, sort, order, limit, offset } = req.query;
-    const { data, total } = await taskRepo.findMany({ status, priority, sort, order, limit, offset });
+    
+    // BARU: User biasa hanya lihat task miliknya; Admin lihat semua
+    const userId = req.user.role === 'ADMIN' ? undefined : req.user.userId;
+
+    // BARU: Tambahkan userId ke dalam query
+    const { data, total } = await taskRepo.findMany({ userId, status, priority, sort, order, limit, offset });
+    
     const numLimit = Number(limit) || 10;
     const numOffset = Number(offset) || 0;
 
@@ -23,7 +29,8 @@ const listTasks = async (req, res, next) => {
 
 const createTask = async (req, res, next) => {
   try {
-    const task = await taskRepo.create({ ...req.body, userId: req.body.userId || 1 });
+    // BARU: Gunakan userId dari token (req.user.userId), jangan percaya dari request body
+    const task = await taskRepo.create({ ...req.body, userId: req.user.userId });
     res.status(201).set('Location', `/api/v1/tasks/${task.id}`).json({ data: task });
   } catch (err) { next(err); }
 };
@@ -71,4 +78,5 @@ const getTasksByUser = async (req, res, next) => {
     next(err);
   }
 };
+
 module.exports = { listTasks, createTask, getTask, updateTask, deleteTask, getTasksByUser };

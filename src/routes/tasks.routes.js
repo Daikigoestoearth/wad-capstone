@@ -1,8 +1,13 @@
+// File: src/routes/tasks.routes.js
 const express = require('express');
 const router = express.Router();
 const ctrl = require('../controllers/tasks.controller');
 const validate = require('../middleware/validate');
-const { createTaskSchema } = require('../validators/task.validator');
+const authenticate = require('../middleware/authenticate');
+const authorize = require('../middleware/authorize');
+const { checkTaskOwnership } = require('../middleware/checkOwnership');
+const { sanitizeBody } = require('../middleware/sanitize'); // BARU: Import sanitizer
+const { createTaskSchema, updateTaskSchema, listTasksSchema } = require('../validators/task.validator'); // DIPERBARUI: Tambahkan listTasksSchema
 
 /**
  * @swagger
@@ -10,6 +15,9 @@ const { createTaskSchema } = require('../validators/task.validator');
  *   name: Tasks
  *   description: Operasi CRUD untuk resource Task
  */
+
+// Semua route di bawah butuh autentikasi
+router.use(authenticate);
 
 /**
  * @swagger
@@ -21,7 +29,8 @@ const { createTaskSchema } = require('../validators/task.validator');
  *       200:
  *         description: Berhasil mengambil daftar task
  */
-router.get('/', ctrl.listTasks);
+// DIPERBARUI: Tambahkan validasi untuk query parameter
+router.get('/', validate(listTasksSchema, 'query'), ctrl.listTasks);
 
 /**
  * @swagger
@@ -41,7 +50,8 @@ router.get('/', ctrl.listTasks);
  *       400:
  *         description: Data tidak valid
  */
-router.post('/', validate(createTaskSchema), ctrl.createTask);
+// DIPERBARUI: Tambahkan sanitizeBody setelah validate dan sebelum authorize
+router.post('/', validate(createTaskSchema), sanitizeBody, authorize('USER', 'ADMIN'), ctrl.createTask);
 
 /**
  * @swagger
@@ -61,7 +71,30 @@ router.post('/', validate(createTaskSchema), ctrl.createTask);
  *       404:
  *         description: Task tidak ditemukan
  */
-router.get('/:id', ctrl.getTask);
+router.get('/:id', checkTaskOwnership, ctrl.getTask);
+
+/**
+ * @swagger
+ * /tasks/{id}:
+ *   patch:
+ *     summary: Perbarui sebagian field task
+ *     tags: [Tasks]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Task berhasil diperbarui
+ *       403:
+ *         description: Bukan pemilik task
+ *       404:
+ *         description: Task tidak ditemukan
+ */
+// DIPERBARUI: Tambahkan sanitizeBody setelah validate
+router.patch('/:id', checkTaskOwnership, validate(updateTaskSchema), sanitizeBody, ctrl.updateTask);
 
 /**
  * @swagger
@@ -81,6 +114,6 @@ router.get('/:id', ctrl.getTask);
  *       404:
  *         description: Task tidak ditemukan
  */
-router.delete('/:id', ctrl.deleteTask);
+router.delete('/:id', checkTaskOwnership, ctrl.deleteTask);
 
 module.exports = router;

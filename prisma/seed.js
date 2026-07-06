@@ -29,11 +29,12 @@ async function main() {
   ]);
   console.log(' ✓ 3 kategori dibuat');
 
-  const [budi, siti] = await Promise.all([
-    prisma.user.create({ data: { name: 'Budi Santoso', email: 'budi@example.com', password: 'hashed_later' } }),
-    prisma.user.create({ data: { name: 'Siti Rahayu', email: 'siti@example.com', password: 'hashed_later' } }),
+  const [budi, siti, admin] = await Promise.all([
+    prisma.user.create({ data: { name: 'Budi Santoso', email: 'budi@example.com', password: 'hashed_later', role: 'USER' } }),
+    prisma.user.create({ data: { name: 'Siti Rahayu', email: 'siti@example.com', password: 'hashed_later', role: 'USER' } }),
+    prisma.user.create({ data: { name: 'Admin WAD', email: 'admin@example.com', password: 'hashed_later', role: 'ADMIN' } }),
   ]);
-  console.log(' ✓ 2 user dibuat');
+  console.log(' ✓ 3 user dibuat (2 user + 1 admin)');
 
   await Promise.all([
     prisma.task.create({ data: { title: 'Setup Express server', status: 'DONE', priority: 'HIGH', userId: budi.id, categoryId: catProyek.id } }),

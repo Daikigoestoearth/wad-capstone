@@ -1,19 +1,37 @@
+// File: src/index.js
 const config = require('./config');
 const express = require('express');
+const helmet = require('helmet'); // BARU: Security middleware
+const cors = require('cors'); // BARU: CORS middleware
+const corsOptions = require('./config/cors'); // BARU: Konfigurasi CORS
+const { apiLimiter, authLimiter, sensitiveLimiter } = require('./config/rateLimiter'); // BARU: Rate limiters
+
+// Routes
 const routes = require('./routes');
+const authRoutes = require('./routes/auth.routes');
 const tasksRoutes = require('./routes/tasks.routes');
 const usersRoutes = require('./routes/users.routes');
-const authRoutes = require('./routes/auth.routes'); // BARU
-const authenticate = require('./middleware/authenticate'); // BARU
+const adminRoutes = require('./routes/admin.routes'); // BARU: Routes admin
 const setupSwagger = require('./docs/swagger');
 
 const app = express();
 
-// --- Middleware Global ---
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// 1. Security Headers (Helmet) - Harus dipasang PALING AWAL sebelum middleware lain
+app.use(helmet());
 
-// Middleware logging sederhana
+// 2. CORS
+app.use(cors(corsOptions));
+// DIPERBARUI: Menggunakan regex agar kompatibel dengan versi terbaru path-to-regexp
+app.options(/(.*)/, cors(corsOptions)); // Handle preflight untuk semua route
+
+// 3. Body Parser dengan batasan ukuran (Security Hardening)
+app.use(express.json({ limit: '10kb' })); 
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+
+// 4. Rate Limiting Global
+app.use('/api/', apiLimiter);
+
+// 5. Request Logger
 app.use((req, res, next) => {
   const start = Date.now();
   res.on('finish', () => {
@@ -23,55 +41,60 @@ app.use((req, res, next) => {
   next();
 });
 
-// --- Routes ---
+// 6. Routes Dasar
 app.use('/', routes);
 app.use('/api', routes);
 
-// --- Auth routes (TIDAK dilindungi — untuk register/login/refresh/logout) ---
+// Auth routes dengan rate limiting ketat
+app.use('/auth/login', authLimiter);
+app.use('/auth/refresh', sensitiveLimiter);
 app.use('/auth', authRoutes);
 
-// --- API Routes yang DILINDUNGI oleh authenticate middleware ---
-app.use('/api/v1', authenticate);
+// Protected API routes
+// (Catatan: Middleware `authenticate` sekarang dipasang langsung di dalam file routes masing-masing)
 app.use('/api/v1/tasks', tasksRoutes);
 app.use('/api/v1/users', usersRoutes);
+app.use('/api/v1/admin', adminRoutes);
 
-// --- Dokumentasi API (Swagger) ---
+// 7. Swagger UI
 setupSwagger(app);
 
-// --- 404 Handler ---
+// 8. 404 Handler
 app.use((req, res) => {
   res.status(404).json({
-    error: 'Not Found',
-    message: `Route ${req.method} ${req.path} tidak ditemukan.`,
+    error: { code: 'NOT_FOUND', message: `Route ${req.method} ${req.path} tidak ditemukan.` }
   });
 });
 
-// --- Error Handler Global ---
+// 9. Global Error Handler
 app.use((err, req, res, next) => {
-  // Error dengan statusCode dari authService (register/login/refresh/logout)
+  // BARU: Penanganan CORS error
+  if (err.message && err.message.includes('tidak diizinkan oleh CORS')) {
+    return res.status(403).json({
+      error: { code: 'CORS_ERROR', message: err.message }
+    });
+  }
+
+  // Auth service errors
   if (err.statusCode) {
     return res.status(err.statusCode).json({
-      error: { code: err.code || 'AUTH_ERROR', message: err.message },
+      error: { code: err.code || 'AUTH_ERROR', message: err.message }
     });
   }
 
-  // P2002: Unique constraint (email duplikat, dll.)
+  // Prisma P2002 duplicate
   if (err.code === 'P2002') {
-    const field = err.meta?.target ?? 'field';
     return res.status(409).json({
-      error: { code: 'DUPLICATE_RESOURCE', message: `Nilai ${field} sudah digunakan.` }
+      error: { code: 'DUPLICATE_RESOURCE', message: 'Data sudah digunakan.' }
     });
   }
 
-  // P2003: Foreign key constraint (ID tidak ada, misal userId/categoryId invalid)
+  // Prisma P2003 & P2025 (Opsional, dari kode Anda sebelumnya)
   if (err.code === 'P2003') {
-    const field = err.meta?.field_name ?? 'field';
     return res.status(400).json({
-      error: { code: 'INVALID_REFERENCE', message: `Referensi ${field} tidak ditemukan.` }
+      error: { code: 'INVALID_REFERENCE', message: 'Referensi data tidak ditemukan.' }
     });
   }
-
-  // P2025: Record not found untuk update/delete
   if (err.code === 'P2025') {
     return res.status(404).json({
       error: { code: 'NOT_FOUND', message: 'Data tidak ditemukan.' }
@@ -80,18 +103,22 @@ app.use((err, req, res, next) => {
 
   console.error('Unhandled error:', err.message);
   res.status(500).json({
-    error: 'Internal Server Error',
-    message: config.nodeEnv === 'development' ? err.message : 'Terjadi kesalahan.',
+    error: { 
+      code: 'INTERNAL_ERROR', 
+      message: config.nodeEnv === 'development' ? err.message : 'Terjadi kesalahan.' 
+    }
   });
 });
 
-// --- Start Server ---
+// 10. Start Server
 app.listen(config.port, () => {
-  console.log('-'.repeat(50));
+  console.log('-'.repeat(55));
   console.log(`${config.appName} v${config.version}`);
-  console.log(`Environment : ${config.nodeEnv}`);
-  console.log(`Server      : http://localhost:${config.port}`);
-  console.log('-'.repeat(50));
+  console.log(`Environment: ${config.nodeEnv}`);
+  console.log(`Server     : http://localhost:${config.port}`);
+  console.log(`Docs       : http://localhost:${config.port}/api/docs`);
+  console.log(`Security   : Helmet | CORS | Rate Limit`);
+  console.log('-'.repeat(55));
 });
 
 module.exports = app;
