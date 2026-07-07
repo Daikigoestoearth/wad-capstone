@@ -59,6 +59,13 @@ api.interceptors.response.use(
         const newToken = data.data.accessToken;
         
         TokenStore.setAccessToken(newToken);
+        
+        // -- TAMBAHAN UNTUK WEEK 9 (SOCKET.IO RECONNECT) --
+        window.dispatchEvent(new CustomEvent("token:refreshed", { 
+          detail: { token: newToken } 
+        }));
+        // -------------------------------------------------
+        
         processQueue(null, newToken);
         
         orig.headers.Authorization = `Bearer ${newToken}`;

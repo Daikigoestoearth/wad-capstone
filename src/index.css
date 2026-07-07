@@ -78,3 +78,37 @@ body {
 /* Modal */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
 .modal-card { background: white; border-radius: 12px; padding: 2rem; width: 100%; max-width: 560px; }
+/* Real-time indicator di Navbar */
+.rt-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(255,255,255,0.1);
+  padding: 0.3rem 0.75rem;
+  border-radius: 20px;
+}
+
+.rt-dot {
+  width: 8px; 
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  animation: pulse 2s infinite;
+}
+
+.rt-label { 
+  color: #d1fae5; 
+  font-size: 0.8rem; 
+}
+
+/* Toast animation */
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* Dot pulse animation */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
