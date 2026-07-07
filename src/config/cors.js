@@ -21,3 +21,4 @@ const corsOptions = {
 };
 
 module.exports = corsOptions;
+module.exports.allowedOrigins = allowedOrigins; // ← BARU: agar Socket.IO bisa pakai origin yang sama

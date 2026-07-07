@@ -1,31 +1,48 @@
 // File: src/index.js
 const config = require('./config');
 const express = require('express');
-const helmet = require('helmet'); // BARU: Security middleware
-const cors = require('cors'); // BARU: CORS middleware
-const corsOptions = require('./config/cors'); // BARU: Konfigurasi CORS
-const { apiLimiter, authLimiter, sensitiveLimiter } = require('./config/rateLimiter'); // BARU: Rate limiters
+const http = require('http'); // ← BARU
+const { Server } = require('socket.io'); // ← BARU
+const helmet = require('helmet');
+const cors = require('cors');
+const corsOptions = require('./config/cors');
+const { allowedOrigins } = require('./config/cors'); // ← BARU
+const { apiLimiter, authLimiter, sensitiveLimiter } = require('./config/rateLimiter');
 
 // Routes
 const routes = require('./routes');
 const authRoutes = require('./routes/auth.routes');
 const tasksRoutes = require('./routes/tasks.routes');
 const usersRoutes = require('./routes/users.routes');
-const adminRoutes = require('./routes/admin.routes'); // BARU: Routes admin
+const adminRoutes = require('./routes/admin.routes');
 const setupSwagger = require('./docs/swagger');
 
 const app = express();
+const server = http.createServer(app); // ← BARU: HTTP server membungkus Express
+
+// ── SOCKET.IO SERVER ──────────────────────────────────────
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
+  pingTimeout: 60000,
+  pingInterval: 25000,
+});
+
+// Ekspos io agar bisa diakses dari controller
+app.set('io', io);
 
 // 1. Security Headers (Helmet) - Harus dipasang PALING AWAL sebelum middleware lain
 app.use(helmet());
 
 // 2. CORS
 app.use(cors(corsOptions));
-// DIPERBARUI: Menggunakan regex agar kompatibel dengan versi terbaru path-to-regexp
-app.options(/(.*)/, cors(corsOptions)); // Handle preflight untuk semua route
+app.options(/(.*)/, cors(corsOptions));
 
 // 3. Body Parser dengan batasan ukuran (Security Hardening)
-app.use(express.json({ limit: '10kb' })); 
+app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
 // 4. Rate Limiting Global
@@ -51,13 +68,15 @@ app.use('/auth/refresh', sensitiveLimiter);
 app.use('/auth', authRoutes);
 
 // Protected API routes
-// (Catatan: Middleware `authenticate` sekarang dipasang langsung di dalam file routes masing-masing)
 app.use('/api/v1/tasks', tasksRoutes);
 app.use('/api/v1/users', usersRoutes);
 app.use('/api/v1/admin', adminRoutes);
 
 // 7. Swagger UI
 setupSwagger(app);
+
+// ── SOCKET.IO SETUP ───────────────────────────────────────
+require('./socket')(io); // ← BARU: load socket handler (Langkah 3)
 
 // 8. 404 Handler
 app.use((req, res) => {
@@ -68,28 +87,24 @@ app.use((req, res) => {
 
 // 9. Global Error Handler
 app.use((err, req, res, next) => {
-  // BARU: Penanganan CORS error
   if (err.message && err.message.includes('tidak diizinkan oleh CORS')) {
     return res.status(403).json({
       error: { code: 'CORS_ERROR', message: err.message }
     });
   }
 
-  // Auth service errors
   if (err.statusCode) {
     return res.status(err.statusCode).json({
       error: { code: err.code || 'AUTH_ERROR', message: err.message }
     });
   }
 
-  // Prisma P2002 duplicate
   if (err.code === 'P2002') {
     return res.status(409).json({
       error: { code: 'DUPLICATE_RESOURCE', message: 'Data sudah digunakan.' }
     });
   }
 
-  // Prisma P2003 & P2025 (Opsional, dari kode Anda sebelumnya)
   if (err.code === 'P2003') {
     return res.status(400).json({
       error: { code: 'INVALID_REFERENCE', message: 'Referensi data tidak ditemukan.' }
@@ -103,21 +118,22 @@ app.use((err, req, res, next) => {
 
   console.error('Unhandled error:', err.message);
   res.status(500).json({
-    error: { 
-      code: 'INTERNAL_ERROR', 
-      message: config.nodeEnv === 'development' ? err.message : 'Terjadi kesalahan.' 
+    error: {
+      code: 'INTERNAL_ERROR',
+      message: config.nodeEnv === 'development' ? err.message : 'Terjadi kesalahan.'
     }
   });
 });
 
 // 10. Start Server
-app.listen(config.port, () => {
+// PENTING: gunakan server.listen(), BUKAN app.listen()
+server.listen(config.port, () => {
   console.log('-'.repeat(55));
   console.log(`${config.appName} v${config.version}`);
   console.log(`Environment: ${config.nodeEnv}`);
   console.log(`Server     : http://localhost:${config.port}`);
   console.log(`Docs       : http://localhost:${config.port}/api/docs`);
-  console.log(`Security   : Helmet | CORS | Rate Limit`);
+  console.log(`Security   : Helmet | CORS | Rate Limit | Socket.IO`);
   console.log('-'.repeat(55));
 });
 
