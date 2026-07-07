@@ -11,25 +11,54 @@ export function TaskForm({ onSubmit, onCancel, initialData = null }) {
     reset,
     formState: { errors, isSubmitting },
   } = useForm({
-    defaultValues: initialData || {
+    defaultValues: {
       title: "",
       description: "",
-      status: "TODO",
-      priority: "MEDIUM",
+      status: "todo", 
+      priority: "medium",
       dueDate: "",
     },
   });
   
-  // Isi ulang form ketika initialData berubah (saat ganti task yang diedit)
+  // PERBAIKAN 1: Bersihkan dan sesuaikan data dari backend sebelum masuk ke form
   useEffect(() => {
-    if (initialData) reset(initialData);
+    if (initialData) {
+      reset({
+        title: initialData.title || "",
+        description: initialData.description || "",
+        // Paksa menjadi huruf kecil agar cocok dengan opsi dropdown kita
+        status: initialData.status ? initialData.status.toLowerCase() : "todo",
+        priority: initialData.priority ? initialData.priority.toLowerCase() : "medium",
+        // Jika ada tanggal dari database (contoh: 2024-05-12T00:00:00.000Z), potong bagian waktunya
+        dueDate: initialData.dueDate ? initialData.dueDate.split('T')[0] : "",
+      });
+    }
   }, [initialData, reset]);
   
+  // PERBAIKAN 2: Saring data sebelum dikirim agar Joi Backend tidak menolak
+  const handlePreSubmit = (data) => {
+    // KITA HANYA MENGIRIM FIELD YANG DIIZINKAN OLEH JOI
+    // Jangan pernah mengirim 'id', 'createdAt', 'updatedAt', dll.
+    const payload = {
+      title: data.title,
+      description: data.description,
+      status: data.status,
+      priority: data.priority,
+    };
+
+    // Kirim dueDate hanya jika benar-benar ada isinya
+    if (data.dueDate) {
+      payload.dueDate = data.dueDate;
+    }
+
+    onSubmit(payload);
+  };
+
   return (
     <div className="modal-overlay">
       <div className="modal-card">
         <h2>{isEdit ? "Edit Task" : "Buat Task Baru"}</h2>
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit(handlePreSubmit)}>
           <div className="form-group">
             <label>Judul *</label>
             <input 
@@ -47,17 +76,17 @@ export function TaskForm({ onSubmit, onCancel, initialData = null }) {
             <div className="form-group">
               <label>Status</label>
               <select {...register("status")}>
-                <option value="TODO">Belum Dimulai</option>
-                <option value="IN_PROGRESS">Sedang Dikerjakan</option>
-                <option value="DONE">Selesai</option>
+                <option value="todo">Belum Dimulai</option>
+                <option value="in_progress">Sedang Dikerjakan</option>
+                <option value="done">Selesai</option>
               </select>
             </div>
             <div className="form-group">
               <label>Prioritas</label>
               <select {...register("priority")}>
-                <option value="LOW">Rendah</option>
-                <option value="MEDIUM">Sedang</option>
-                <option value="HIGH">Tinggi</option>
+                <option value="low">Rendah</option>
+                <option value="medium">Sedang</option>
+                <option value="high">Tinggi</option>
               </select>
             </div>
           </div>
