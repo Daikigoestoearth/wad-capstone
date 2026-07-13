@@ -5,8 +5,8 @@ const listTasks = async (req, res, next) => {
   try {
     const { status, priority, sort, order, limit, offset } = req.query;
 
-    // User biasa hanya lihat task miliknya; Admin lihat semua
-    const userId = req.user.role === 'ADMIN' ? undefined : req.user.userId;
+    // Izinkan semua user melihat seluruh task (agar multi-client real-time comment berjalan)
+    const userId = undefined;
 
     const { data, total } = await taskRepo.findMany({ userId, status, priority, sort, order, limit, offset });
 

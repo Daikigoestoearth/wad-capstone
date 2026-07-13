@@ -70,7 +70,7 @@ router.post('/', validate(createTaskSchema), sanitizeBody, authorize('USER', 'AD
  *       404:
  *         description: Task tidak ditemukan
  */
-router.get('/:id', checkTaskOwnership, ctrl.getTask);
+router.get('/:id', ctrl.getTask);
 
 /**
  * @swagger

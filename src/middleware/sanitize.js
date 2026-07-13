@@ -9,6 +9,8 @@ const sanitizeBody = (req, res, next) => {
   if (req.body && typeof req.body === 'object') {
     const sanitizeValue = (val) => {
       if (typeof val === 'string') return xss(val);
+      if (val instanceof Date) return val; // ← Abaikan objek Date
+      if (Array.isArray(val)) return val.map(sanitizeValue); // ← Tangani Array secara rekursif
       if (typeof val === 'object' && val !== null) {
         return Object.fromEntries(
           Object.entries(val).map(([k, v]) => [k, sanitizeValue(v)])

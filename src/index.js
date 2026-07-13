@@ -15,6 +15,7 @@ const authRoutes = require('./routes/auth.routes');
 const tasksRoutes = require('./routes/tasks.routes');
 const usersRoutes = require('./routes/users.routes');
 const adminRoutes = require('./routes/admin.routes');
+const commentRoutes = require('./routes/comment.routes');
 const setupSwagger = require('./docs/swagger');
 
 const app = express();
@@ -71,6 +72,7 @@ app.use('/auth', authRoutes);
 app.use('/api/v1/tasks', tasksRoutes);
 app.use('/api/v1/users', usersRoutes);
 app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/comments', commentRoutes);
 
 // 7. Swagger UI
 setupSwagger(app);

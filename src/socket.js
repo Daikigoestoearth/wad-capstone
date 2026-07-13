@@ -34,6 +34,16 @@ module.exports = function setupSocket(io) {
     socket.join(`user:${userId}`);
     socket.join('tasks:global');
 
+    socket.on('join:task', ({ taskId }) => {
+      socket.join(`task:${taskId}`);
+      console.log(`[Socket] User ${email} join room task:${taskId}`);
+    });
+
+    socket.on('leave:task', ({ taskId }) => {
+      socket.leave(`task:${taskId}`);
+      console.log(`[Socket] User ${email} leave room task:${taskId}`);
+    });
+
     const onlineCount = io.sockets.sockets.size;
     io.emit('users:online', { count: onlineCount });
 

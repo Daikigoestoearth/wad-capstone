@@ -18,6 +18,7 @@ model User {
 
   tasks         Task[]
   refreshTokens RefreshToken[]
+  comments      Comment[]
 
   @@map("users")
 }
@@ -50,6 +51,7 @@ model Task {
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  comments Comment[]
 
   @@index([userId])
   @@index([status])
@@ -71,6 +73,23 @@ model RefreshToken {
   @@index([token])
   @@index([userId])
   @@map("refresh_tokens")
+}
+
+// ─── Model Tambahan UTS: Comment (Ardika Banyuartha) ──────
+model Comment {
+  id        Int      @id @default(autoincrement())
+  content   String   @db.Text
+  taskId    Int
+  userId    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([userId])
+  @@map("comments")
 }
 
 // ─── Enum ───────────────────────────────────────────────
