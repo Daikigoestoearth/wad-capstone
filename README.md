@@ -104,7 +104,7 @@ Sebelum melakukan setup, sesuaikan provider database di file **[`prisma/schema.p
 
 ## 📊 Entity Relationship Diagram (ERD)
 
-Database menggunakan **PostgreSQL** yang dimigrasi via **Prisma ORM** dengan struktur relasi sebagai berikut:
+Database menggunakan **MySQL / MariaDB** yang dimigrasi via **Prisma ORM** dengan struktur relasi sebagai berikut:
 
 *   **User** (`users`): Menyimpan informasi pengguna (id, nama, email, password terenkripsi Argon2, role).
     *   Relasi: Satu `User` memiliki banyak (`1:N`) `Task`, `RefreshToken`, dan `Comment`.
@@ -146,9 +146,9 @@ graph TD
     UFW -->|Internal Proxy to Port 3000| PM2[PM2 Process Manager]
     PM2 -->|Manage App Process| ExpressApp[Express.js App]
     ExpressApp -->|WebSocket Connection| SocketIO[Socket.IO Server]
-    ExpressApp -->|Prisma Client| DB[(PostgreSQL Database)]
+    ExpressApp -->|Prisma Client| DB[(MySQL Database)]
 ```
 
 *   **Nginx**: Berfungsi sebagai pintu gerbang utama (Reverse Proxy) di Port 80 (HTTP) dan Port 443 (HTTPS) dengan SSL Let's Encrypt. Nginx meneruskan trafik statis frontend dan mengarahkan API/WebSocket ke backend internal.
 *   **PM2**: Menjaga aplikasi backend agar tetap berjalan di latar belakang (daemon), menangani auto-restart jika terjadi *crash*, dan menyalakan kembali aplikasi saat VPS melakukan *reboot* (startup on boot).
-*   **UFW**: Melakukan hardening keamanan port. Semua port eksternal ditutup (termasuk port database 5432 dan port backend 3000), hanya menyisakan port SSH, HTTP (80), dan HTTPS (443) yang terbuka untuk publik.
+*   **UFW**: Melakukan hardening keamanan port. Semua port eksternal ditutup (termasuk port database 3306 dan port backend 3000), hanya menyisakan port SSH, HTTP (80), dan HTTPS (443) yang terbuka untuk publik.
